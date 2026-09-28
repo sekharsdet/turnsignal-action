@@ -14,7 +14,7 @@ inputs:
     description: TurnSignal project token (store it as a secret, for example secrets.TURNSIGNAL_TOKEN).
     required: true
   github-token:
-    description: Token used by `comment` to post the sticky pull request comment (needs `pull-requests: write`).
+    description: "Token used by `comment` to post the sticky pull request comment (needs `pull-requests: write`)."
     required: false
     default: ${{ github.token }}
   working-directory:
