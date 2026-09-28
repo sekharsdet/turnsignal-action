@@ -1,0 +1,57 @@
+name: TurnSignal Playwright Report
+description: Know if your change broke Playwright tests, which are flaky, and which never reported. Never changes your exit code.
+author: TurnSignal
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  command:
+    description: "`upload` in each test job (after the Playwright step, with `if: always()`), or `comment` in a final job after all shards."
+    required: false
+    default: upload
+  token:
+    description: TurnSignal project token (store it as a secret, for example secrets.TURNSIGNAL_TOKEN).
+    required: true
+  github-token:
+    description: Token used by `comment` to post the sticky pull request comment (needs `pull-requests: write`).
+    required: false
+    default: ${{ github.token }}
+  working-directory:
+    description: Folder that holds your playwright.config (where the reporter writes `.turnsignal/`).
+    required: false
+    default: .
+  wait:
+    description: "`comment` only: seconds to wait for the run to finish on the server."
+    required: false
+    default: "60"
+  api-url:
+    description: Only for a self-hosted TurnSignal server.
+    required: false
+    default: ""
+  version:
+    description: turnsignal npm version or range to run.
+    required: false
+    default: "0.6"
+
+runs:
+  using: composite
+  steps:
+    - name: TurnSignal ${{ inputs.command }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        TURNSIGNAL_TOKEN: ${{ inputs.token }}
+        TURNSIGNAL_API_URL: ${{ inputs.api-url }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        TS_COMMAND: ${{ inputs.command }}
+        TS_VERSION: ${{ inputs.version }}
+        TS_WAIT: ${{ inputs.wait }}
+      run: |
+        # Fail-open like the CLI: a TurnSignal problem never turns your build red.
+        if [ -z "$TURNSIGNAL_API_URL" ]; then unset TURNSIGNAL_API_URL; fi
+        case "$TS_COMMAND" in
+          upload) npx -y "turnsignal@$TS_VERSION" upload || true ;;
+          comment) npx -y "turnsignal@$TS_VERSION" comment --wait "$TS_WAIT" || true ;;
+          *) echo "::warning title=TurnSignal::unknown command '$TS_COMMAND' (use upload or comment)" ;;
+        esac
