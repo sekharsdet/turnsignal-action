@@ -8,7 +8,7 @@ Free during the public beta ([limits](https://turnsignal.ai/#pricing), [terms](h
 
 ## Setup
 
-1. Create a project at [app.turnsignal.ai](https://app.turnsignal.ai?ref=marketplace) and save its token as the repository secret `TURNSIGNAL_TOKEN`.
+1. Create a project at [app.turnsignal.ai](https://app.turnsignal.ai) and save its token as the repository secret `TURNSIGNAL_TOKEN`.
 2. Add the reporter to your Playwright config:
 
 ```bash
