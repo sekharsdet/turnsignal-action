@@ -1,0 +1,35 @@
+name: release
+# Manual release: creates the vX.Y.Z tag and GitHub release on main, then moves the major tag (v1)
+# so `uses: sekharsdet/turnsignal-action@v1` picks it up. The Marketplace listing is ticked on the
+# release page by the owner (GitHub has no API for it).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without the v, e.g. 1.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag, release, move the major tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version must look like 1.2.3"; exit 1; }
+          TAG="v$VERSION"; MAJOR="v${VERSION%%.*}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then echo "$TAG already exists"; exit 1; fi
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
+          gh release create "$TAG" --title "$TAG" --generate-notes --latest
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git push -f origin "$MAJOR"
+          echo "Released $TAG and moved $MAJOR to $GITHUB_SHA"
