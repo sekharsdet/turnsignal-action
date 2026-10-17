@@ -1,10 +1,12 @@
-# TurnSignal Playwright Report
+# TurnSignal for Playwright
 
-GitHub Action for [TurnSignal](https://turnsignal.ai): on every CI run, see **which Playwright tests your change broke**, which failures were **already on main**, which tests are **flaky**, and which **never reported** because a runner crashed or ran out of memory. On pull requests it keeps one comment up to date with that verdict.
+GitHub Action for [TurnSignal for Playwright](https://turnsignal.ai/product?ref=marketplace): on every CI run, see **which Playwright tests your change broke**, which failures were **already on main**, which tests are **flaky**, and which **never reported** because a runner crashed or ran out of memory. On pull requests it keeps one comment up to date with that verdict.
 
 It never changes your exit code. If TurnSignal is unreachable, your build is unaffected.
 
-Free during the public beta ([limits](https://turnsignal.ai/#pricing), [terms](https://turnsignal.ai/terms), [privacy](https://turnsignal.ai/privacy)). No repository access needed.
+It can also review the **test changes in a pull request** without any account: it flags weakened assertions, changed expected values, disabled tests and added waits (often an AI "fix"), and says who or which coding agent made them. See [Review test changes](#review-test-changes-no-token).
+
+Free during the public beta ([pricing](https://turnsignal.ai/pricing?ref=marketplace), [security](https://turnsignal.ai/security?ref=marketplace), [terms](https://turnsignal.ai/terms), [privacy](https://turnsignal.ai/privacy)). No repository access needed.
 
 ## Setup
 
@@ -60,15 +62,36 @@ jobs:
           token: ${{ secrets.TURNSIGNAL_TOKEN }}
 ```
 
+## Review test changes (no token)
+
+`governance` compares the tests changed in a pull request with the base branch on the CI machine and keeps one PR comment up to date: what needs a human review, what is worth a look, and what is safe (locator or rename only). Nothing is uploaded and no TurnSignal account is needed.
+
+```yaml
+jobs:
+  test-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needs the base branch history
+      - uses: sekharsdet/turnsignal-action@v1
+        with:
+          command: governance
+```
+
 ## Inputs
 
 | Input | Default | What it does |
 | --- | --- | --- |
-| `token` | (required) | TurnSignal project token |
-| `command` | `upload` | `upload` after the test step, or `comment` in a final job |
+| `token` | | TurnSignal project token (required for `upload` and `comment`) |
+| `command` | `upload` | `upload` after the test step, `comment` in a final job, or `governance` on pull requests |
 | `working-directory` | `.` | Folder with your `playwright.config` |
 | `wait` | `60` | `comment`: seconds to wait for the run to finish |
-| `github-token` | `github.token` | Used to post the PR comment |
+| `github-token` | `github.token` | Used to post the PR comments |
 | `api-url` | | Only for a self-hosted server |
 | `version` | `0.6` | `turnsignal` npm version or range |
 

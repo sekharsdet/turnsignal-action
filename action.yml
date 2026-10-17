@@ -1,5 +1,5 @@
-name: TurnSignal Playwright Report
-description: Know if your change broke Playwright tests, which are flaky, and which never reported. Never changes your exit code.
+name: TurnSignal for Playwright
+description: Playwright PR verdicts (new, already failing, flaky, missing) and a token-free review of weakened tests.
 author: TurnSignal
 branding:
   icon: check-circle
@@ -7,14 +7,15 @@ branding:
 
 inputs:
   command:
-    description: "`upload` in each test job (after the Playwright step, with `if: always()`), or `comment` in a final job after all shards."
+    description: "`upload` in each test job (after the Playwright step, with `if: always()`), `comment` in a final job after all shards, or `governance` on pull requests (no token needed)."
     required: false
     default: upload
   token:
-    description: TurnSignal project token (store it as a secret, for example secrets.TURNSIGNAL_TOKEN).
-    required: true
+    description: TurnSignal project token (store it as a secret, for example secrets.TURNSIGNAL_TOKEN). Not needed for `governance`.
+    required: false
+    default: ""
   github-token:
-    description: "Token used by `comment` to post the sticky pull request comment (needs `pull-requests: write`)."
+    description: "Token used by `comment` and `governance` to post the sticky pull request comment (needs `pull-requests: write`)."
     required: false
     default: ${{ github.token }}
   working-directory:
@@ -50,8 +51,10 @@ runs:
       run: |
         # Fail-open like the CLI: a TurnSignal problem never turns your build red.
         if [ -z "$TURNSIGNAL_API_URL" ]; then unset TURNSIGNAL_API_URL; fi
+        if [ -z "$TURNSIGNAL_TOKEN" ]; then unset TURNSIGNAL_TOKEN; fi
         case "$TS_COMMAND" in
           upload) npx -y "turnsignal@$TS_VERSION" upload || true ;;
           comment) npx -y "turnsignal@$TS_VERSION" comment --wait "$TS_WAIT" || true ;;
-          *) echo "::warning title=TurnSignal::unknown command '$TS_COMMAND' (use upload or comment)" ;;
+          governance) npx -y "turnsignal@$TS_VERSION" governance || true ;;
+          *) echo "::warning title=TurnSignal::unknown command '$TS_COMMAND' (use upload, comment or governance)" ;;
         esac
